@@ -1,0 +1,10 @@
+Chain POSTROUTING (policy ACCEPT 3 packets, 235 bytes)
+num   pkts bytes target     prot opt in     out     source               destination         
+1        1   118 RETURN     all  --  *      *       192.168.122.0/24     224.0.0.0/24        
+2        0     0 RETURN     all  --  *      *       192.168.122.0/24     255.255.255.255     
+3        0     0 MASQUERADE  tcp  --  *      *       192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+4        0     0 MASQUERADE  udp  --  *      *       192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+5        0     0 MASQUERADE  all  --  *      *       192.168.122.0/24    !192.168.122.0/24    
+6     2343  145K POSTROUTING_direct  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+7     2343  145K POSTROUTING_ZONES_SOURCE  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+8     2343  145K POSTROUTING_ZONES  all  --  *      *       0.0.0.0/0            0.0.0.0/0           

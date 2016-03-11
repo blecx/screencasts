@@ -1,0 +1,7 @@
+<network>
+  <name>default</name>
+  <bridge name='virbr0' stp='on' delay='0'/>
+  <mac address='52:54:00:61:dd:62'/>
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+  </ip>
+</network>

@@ -14,6 +14,10 @@ Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
 
 REFERENCES
 
+[eaas_host_router]  screencasts/eaas/networking/host_router
+                    at master,
+                    https://github.com/aberends/screencasts/tree/master/eaas/networking/host_router
+
 [libvirt_network]   libvirt: Network XML format,
                     https://libvirt.org/formatnetwork.html
 
@@ -65,5 +69,79 @@ vim -o nat isolated_nat         # no difference
 
 
 # Difference isolated and nat
+vim -o isolated_filter nat_filter
+vim -o isolated_nat nat_nat
+
+
+YOUTUBE VIDEO DESCRIPTION
+
+Examine the impact of an isolated and NATted default
+network, created by libvirt, on iptables.
+
+Links:
+https://github.com/aberends/screencasts/tree/master/eaas/networking/host_router
+https://libvirt.org/formatnetwork.html
+
+No default network:
+virsh net-destroy default
+virsh net-undefine default
+
+Put output of:
+iptables -n -v --line-numbers -L FORWARD
+in the file:
+filter
+
+Put the output of:
+iptables -t nat -n -v --line-numbers -L POSTROUTING
+in the file:
+nat
+
+Show that we have no default network:
+virsh net-list --all | grep default
+
+Isolated default network:
+cat isolated_default.xml
+virsh net-define isolated_default.xml
+virsh net-start default
+
+Put the output of:
+iptables -n -v --line-numbers -L FORWARD
+in the file:
+isolated_filter
+
+Put the output of:
+iptables -t nat -n -v --line-numbers -L POSTROUTING
+in the file:
+isolated_nat
+
+Show that the default network now exists:
+virsh net-list --all | grep default
+
+NATted default network:
+cat nat_default.xml
+virsh net-destroy default
+virsh net-undefine default
+virsh net-define nat_default.xml
+virsh net-start default
+
+Put the output of:
+iptables -n -v --line-numbers -L FORWARD
+in:
+nat_filter
+
+Put the output of:
+iptables -t nat -n -v --line-numbers -L POSTROUTING
+in:
+nat_nat
+
+Show that the default network exists:
+virsh net-list --all | grep default
+
+Difference no (default network) and isolated:
+vim -o filter isolated_filter
+vim -o nat isolated_nat         # no difference
+
+
+Difference isolated and nat:
 vim -o isolated_filter nat_filter
 vim -o isolated_nat nat_nat

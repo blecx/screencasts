@@ -1,0 +1,26 @@
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+num   pkts bytes target     prot opt in     out     source               destination         
+1        0     0 ACCEPT     all  --  *      virbr0  0.0.0.0/0            192.168.122.0/24     ctstate RELATED,ESTABLISHED
+2        0     0 ACCEPT     all  --  virbr0 *       192.168.122.0/24     0.0.0.0/0           
+3        0     0 ACCEPT     all  --  virbr0 virbr0  0.0.0.0/0            0.0.0.0/0           
+4        0     0 REJECT     all  --  *      virbr0  0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+5        0     0 REJECT     all  --  virbr0 *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+6        0     0 ACCEPT     all  --  virbr655616 virbr655616  0.0.0.0/0            0.0.0.0/0           
+7        0     0 REJECT     all  --  *      virbr655616  0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+8        0     0 REJECT     all  --  virbr655616 *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+9        0     0 ACCEPT     all  --  virbr11279616 virbr11279616  0.0.0.0/0            0.0.0.0/0           
+10       0     0 REJECT     all  --  *      virbr11279616  0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+11       0     0 REJECT     all  --  virbr11279616 *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+12       0     0 ACCEPT     all  --  virbr12625920 virbr12625920  0.0.0.0/0            0.0.0.0/0           
+13       0     0 REJECT     all  --  *      virbr12625920  0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+14       0     0 REJECT     all  --  virbr12625920 *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+15       0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate RELATED,ESTABLISHED
+16       0     0 ACCEPT     all  --  lo     *       0.0.0.0/0            0.0.0.0/0           
+17       0     0 FORWARD_direct  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+18       0     0 FORWARD_IN_ZONES_SOURCE  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+19       0     0 FORWARD_IN_ZONES  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+20       0     0 FORWARD_OUT_ZONES_SOURCE  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+21       0     0 FORWARD_OUT_ZONES  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+22       0     0 ACCEPT     icmp --  *      *       0.0.0.0/0            0.0.0.0/0           
+23       0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate INVALID
+24       0     0 REJECT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-host-prohibited

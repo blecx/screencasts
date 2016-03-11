@@ -1,0 +1,10 @@
+<network>
+  <name>default</name>
+  <bridge name='virbr0' stp='on' delay='0'/>
+  <mac address='52:54:00:42:10:f3'/>
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+  </ip>
+  <route family='ipv4' address='10.0.0.0' prefix='8' gateway='192.168.122.2'/>
+  <route family='ipv4' address='172.16.0.0' prefix='12' gateway='192.168.122.2'/>
+  <route family='ipv4' address='192.168.0.0' prefix='16' gateway='192.168.122.2'/>
+</network>

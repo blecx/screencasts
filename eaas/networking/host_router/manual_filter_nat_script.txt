@@ -1,0 +1,137 @@
+SCREENCAST SCRIPT MANUALLY ADD FILTER AND NAT RULES
+
+
+AUTHOR
+
+Allard Berends
+
+
+HISTORY
+
+Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
+07-Mar-2016 17:56, Allard Berends, start
+
+
+REFERENCES
+
+[libvirt_hooks]     libvirt: Hooks for specific system
+                    management,
+                    https://www.libvirt.org/hooks.html
+
+[priv_ranges]       Private network - Wikipedia,
+                    https://en.wikipedia.org/wiki/Private_network
+
+
+SETUP ACTIONS
+
+iptables -D FORWARD -i virbr0 -s 10/8 -j ACCEPT
+iptables -D FORWARD -o virbr0 -d 10/8 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -t nat -D POSTROUTING -s 10/8 ! -d 10/8 -j MASQUERADE
+iptables -t nat -D POSTROUTING -s 10/8 ! -d 10/8 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -D POSTROUTING -s 10/8 ! -d 10/8 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -D POSTROUTING -s 10/8 -d 255.255.255.255/32 -j RETURN
+iptables -t nat -D POSTROUTING -s 10/8 -d 224.0.0.0/24 -j RETURN
+
+iptables -D FORWARD -i virbr0 -s 172.16/12 -j ACCEPT
+iptables -D FORWARD -o virbr0 -d 172.16/12 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -t nat -D POSTROUTING -s 172.16/12 ! -d 172.16/12 -j MASQUERADE
+iptables -t nat -D POSTROUTING -s 172.16/12 ! -d 172.16/12 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -D POSTROUTING -s 172.16/12 ! -d 172.16/12 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -D POSTROUTING -s 172.16/12 -d 255.255.255.255/32 -j RETURN
+iptables -t nat -D POSTROUTING -s 172.16/12 -d 224.0.0.0/24 -j RETURN
+
+iptables -D FORWARD -i virbr0 -s 192.168/16 -j ACCEPT
+iptables -D FORWARD -o virbr0 -d 192.168/16 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -t nat -D POSTROUTING -s 192.168/16 ! -d 192.168/16 -j MASQUERADE
+iptables -t nat -D POSTROUTING -s 192.168/16 ! -d 192.168/16 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -D POSTROUTING -s 192.168/16 ! -d 192.168/16 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -D POSTROUTING -s 192.168/16 -d 255.255.255.255/32 -j RETURN
+iptables -t nat -D POSTROUTING -s 192.168/16 -d 224.0.0.0/24 -j RETURN
+
+
+COMMANDS
+
+# Activate the isolated default network
+cat default_priv_ranges.xml
+
+virsh net-destroy default
+virsh net-undefine default
+
+ip route show dev virbr0 scope global
+
+virsh net-define default_priv_ranges.xml
+virsh net-start default
+
+ip route show dev virbr0 scope global
+
+virsh detach-interface dunsr1 --type network --mac 52:54:00:a8:7a:02
+virsh attach-interface dunsr1 --type network --source default --model virtio --mac 52:54:00:a8:7a:02
+ping 192.168.122.2
+
+
+# Added by libvirt in filter/FORWARD with forward mode NAT
+1        0     0 ACCEPT     all  --  *      virbr0  0.0.0.0/0            192.168.122.0/24     ctstate RELATED,ESTABLISHED
+2        0     0 ACCEPT     all  --  virbr0 *       192.168.122.0/24     0.0.0.0/0
+3        0     0 ACCEPT     all  --  virbr0 virbr0  0.0.0.0/0            0.0.0.0/0
+4        0     0 REJECT     all  --  *      virbr0  0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+5        0     0 REJECT     all  --  virbr0 *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+
+
+# Manual commands of 1 and 2 for filter/FORWARD
+# 3-5 are done by isolated network definition XML
+#iptables -I FORWARD 1 -i virbr0 -s 192.168.122.0/24 -j ACCEPT
+#iptables -I FORWARD 1 -o virbr0 -d 192.168.122.0/24 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+
+# Added by libvirt in nat/POSTROUTING with forward mode NAT
+1        1   118 RETURN     all  --  *      *       192.168.122.0/24     224.0.0.0/24
+2        0     0 RETURN     all  --  *      *       192.168.122.0/24     255.255.255.255
+3        0     0 MASQUERADE  tcp  --  *      *       192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+4        0     0 MASQUERADE  udp  --  *      *       192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+5        0     0 MASQUERADE  all  --  *      *       192.168.122.0/24    !192.168.122.0/24
+
+
+# Manual commands of 1-5 for nat/POSTROUTING
+#iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 ! -d 192.168.122.0/24 -j MASQUERADE
+#iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 ! -d 192.168.122.0/24 -p udp -j MASQUERADE --to-ports 1024-65535
+#iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 ! -d 192.168.122.0/24 -p tcp -j MASQUERADE --to-ports 1024-65535
+#iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 -d 255.255.255.255/32 -j RETURN
+#iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 -d 224.0.0.0/24 -j RETURN
+
+
+# libvirt switches on routing in ip_forward
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/ipv4_forward.conf
+chcon system_u:object_r:etc_t:s0 /etc/sysctl.d/ipv4_forward.conf
+sysctl --system
+
+
+# Private ranges: 10/8, 172.16/12, 192.168/16
+iptables -I FORWARD 1 -i virbr0 -s 10/8 -j ACCEPT
+iptables -I FORWARD 1 -o virbr0 -d 10/8 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -t nat -I POSTROUTING 1 -s 10/8 ! -d 10/8 -j MASQUERADE
+iptables -t nat -I POSTROUTING 1 -s 10/8 ! -d 10/8 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 10/8 ! -d 10/8 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 10/8 -d 255.255.255.255/32 -j RETURN
+iptables -t nat -I POSTROUTING 1 -s 10/8 -d 224.0.0.0/24 -j RETURN
+
+iptables -I FORWARD 1 -i virbr0 -s 172.16/12 -j ACCEPT
+iptables -I FORWARD 1 -o virbr0 -d 172.16/12 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -t nat -I POSTROUTING 1 -s 172.16/12 ! -d 172.16/12 -j MASQUERADE
+iptables -t nat -I POSTROUTING 1 -s 172.16/12 ! -d 172.16/12 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 172.16/12 ! -d 172.16/12 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 172.16/12 -d 255.255.255.255/32 -j RETURN
+iptables -t nat -I POSTROUTING 1 -s 172.16/12 -d 224.0.0.0/24 -j RETURN
+
+iptables -I FORWARD 1 -i virbr0 -s 192.168/16 -j ACCEPT
+iptables -I FORWARD 1 -o virbr0 -d 192.168/16 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -t nat -I POSTROUTING 1 -s 192.168/16 ! -d 192.168/16 -j MASQUERADE
+iptables -t nat -I POSTROUTING 1 -s 192.168/16 ! -d 192.168/16 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 192.168/16 ! -d 192.168/16 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 192.168/16 -d 255.255.255.255/32 -j RETURN
+iptables -t nat -I POSTROUTING 1 -s 192.168/16 -d 224.0.0.0/24 -j RETURN
+
+
+# Verify
+iptables -n -v --line-numbers -L FORWARD > a
+iptables -t nat -n -v --line-numbers -L POSTROUTING > b
+ping -c 1 74.125.195.94

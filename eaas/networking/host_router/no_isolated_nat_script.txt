@@ -1,0 +1,69 @@
+SCREENCAST SCRIPT LIBVIRT IPTABLES INFLUENCE
+
+
+AUTHOR
+
+Allard Berends
+
+
+HISTORY
+
+Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
+07-Mar-2016 15:38, Allard Berends, start
+
+
+REFERENCES
+
+[libvirt_network]   libvirt: Network XML format,
+                    https://libvirt.org/formatnetwork.html
+
+
+SETUP ACTIONS
+
+# None
+
+
+COMMANDS
+
+# Differences in filter/FORWARD and nat/POSTROUTING
+# * no default network
+# * isolated default network
+# * NATted default network
+
+
+# No default network
+virsh net-destroy default
+virsh net-undefine default
+iptables -n -v --line-numbers -L FORWARD > filter
+iptables -t nat -n -v --line-numbers -L POSTROUTING > nat
+virsh net-list --all | grep default
+
+
+# Isolated default network
+cat isolated_default.xml
+virsh net-define isolated_default.xml
+virsh net-start default
+iptables -n -v --line-numbers -L FORWARD > isolated_filter
+iptables -t nat -n -v --line-numbers -L POSTROUTING > isolated_nat
+virsh net-list --all | grep default
+
+
+# NATted default network
+cat nat_default.xml
+virsh net-destroy default
+virsh net-undefine default
+virsh net-define nat_default.xml
+virsh net-start default
+iptables -n -v --line-numbers -L FORWARD > nat_filter
+iptables -t nat -n -v --line-numbers -L POSTROUTING > nat_nat
+virsh net-list --all | grep default
+
+
+# Difference no and isolated
+vim -o filter isolated_filter
+vim -o nat isolated_nat         # no difference
+
+
+# Difference isolated and nat
+vim -o isolated_filter nat_filter
+vim -o isolated_nat nat_nat

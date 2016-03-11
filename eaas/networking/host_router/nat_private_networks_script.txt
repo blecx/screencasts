@@ -1,0 +1,115 @@
+SCREENCAST SCRIPT NAT PRIVATE NETWORKS
+
+
+AUTHOR
+
+Allard Berends
+
+
+HISTORY
+
+Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
+06-Mar-2016 19:25, Allard Berends, start
+
+
+REFERENCES
+
+[libvirt_hooks]     libvirt: Hooks for specific system
+                    management,
+                    https://www.libvirt.org/hooks.html
+
+[priv_ranges]       Private network - Wikipedia,
+                    https://en.wikipedia.org/wiki/Private_network
+
+
+SETUP ACTIONS
+
+
+COMMANDS
+
+# Differences in filter/FORWARD and nat/POSTROUTING
+# * no default network
+# * isolated default network
+# * NATted default network
+
+
+# No default network
+virsh net-destroy default
+virsh net-undefine default
+iptables -n -v --line-numbers -L FORWARD > filter
+iptables -t nat -n -v --line-numbers -L POSTROUTING > nat
+
+
+# Isolated default network
+virsh net-define isolated_default.xml
+virsh net-start default
+iptables -n -v --line-numbers -L FORWARD > isolated_filter
+iptables -t nat -n -v --line-numbers -L POSTROUTING > isolated_nat
+
+
+# NATted default network
+virsh net-destroy default
+virsh net-undefine default
+virsh net-define nat_default.xml
+virsh net-start default
+iptables -n -v --line-numbers -L FORWARD > nat_filter
+iptables -t nat -n -v --line-numbers -L POSTROUTING > nat_nat
+
+
+# Difference no and isolated
+vim -o filter isolated_filter
+vim -o nat isolated_nat         # no difference
+
+
+# Difference isolated and nat
+vim -o isolated_filter nat_filter
+vim -o isolated_nat nat_nat
+
+iptables -t nat -n -v --line-numbers -L POSTROUTING
+cat original_default.xml
+virsh net-define original_default.xml
+virsh net-start default
+virsh detach-interface dunsr1 --type network --mac 52:54:00:a8:7a:02
+virsh attach-interface dunsr1 --type network --source default --model virtio --mac 52:54:00:a8:7a:02
+watch -n 1 'iptables -t nat -n -v --line-numbers -L POSTROUTING'
+ping -c 1 74.125.195.94
+
+
+# Adapted default network
+cat no_nat_default.xml
+virsh net-destroy default
+virsh net-undefine default
+virsh net-define no_nat_default.xml
+virsh net-start default
+virsh detach-interface dunsr1 --type network --mac 52:54:00:a8:7a:02
+virsh attach-interface dunsr1 --type network --source default --model virtio --mac 52:54:00:a8:7a:02
+watch -n 1 'iptables -t nat -n -v --line-numbers -L POSTROUTING'
+ping -c 1 74.125.195.94
+
+# Manually restore
+iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 ! -d 192.168.122.0/24 -j MASQUERADE
+iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 ! -d 192.168.122.0/24 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 ! -d 192.168.122.0/24 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 -d 255.255.255.255 -j RETURN
+iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 -d 224.0.0.0/24 -j RETURN
+watch -n 1 'iptables -t nat -n -v --line-numbers -L POSTROUTING'
+ping -c 1 74.125.195.94
+
+
+iptables -I FORWARD 1 -i virbr0 -s 10/8 -j ACCEPT
+iptables -I FORWARD 1 -d 10/8 -o virbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -I FORWARD 1 -i virbr0 -s 172.16/12 -j ACCEPT
+iptables -I FORWARD 1 -d 172.16/12 -o virbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -I FORWARD 1 -i virbr0 -s 192.168/16 -j ACCEPT
+iptables -I FORWARD 1 -d 192.168/16 -o virbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+iptables -t nat -I POSTROUTING 6 -o br0 -s 10/8 -j MASQUERADE
+iptables -t nat -I POSTROUTING 6 -o br0 -s 10/8 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 6 -o br0 -s 10/8 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 6 -o br0 -s 172.16/12 -j MASQUERADE
+iptables -t nat -I POSTROUTING 6 -o br0 -s 172.16/12 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 6 -o br0 -s 172.16/12 -p tcp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 6 -o br0 -s 192.168/16 -j MASQUERADE
+iptables -t nat -I POSTROUTING 6 -o br0 -s 192.168/16 -p udp -j MASQUERADE --to-ports 1024-65535
+iptables -t nat -I POSTROUTING 6 -o br0 -s 192.168/16 -p tcp -j MASQUERADE --to-ports 1024-65535
+

@@ -1,0 +1,88 @@
+SCREENCAST SCRIPT VIRBR0 STATIC ROUTE
+
+
+AUTHOR
+
+Allard Berends
+
+
+HISTORY
+
+Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
+28-Feb-2016 18:14, Allard Berends, start
+
+
+REFERENCES
+
+[libvirt_routes]    libvirt: Network XML format,
+                    https://libvirt.org/formatnetwork.html
+
+
+SETUP ACTIONS
+
+# Configure default without static route
+virsh net-dumpxml default > default.xml
+vim default
+virsh net-destroy default
+virsh net-undefine default
+virsh net-define default.xml
+virsh net-autostart default
+virsh net-start default
+virsh detach-interface dunsr1 --type network --mac 52:54:00:a8:7a:02 --live
+virsh attach-interface dunsr1 --type network --source default --model virtio --mac 52:54:00:a8:7a:02 --live
+
+
+# Delete [libvirt_routes] tab from Firefox
+
+
+# Reset root terminal
+reset
+
+
+COMMANDS
+
+# Demonstrate need for static route to dunsp1
+# man ping
+# man ip-route
+ping -W 1 -c 1 10.1.0.11
+ip route add 10.1.0.0/24 via 192.168.122.2
+ip route show
+ping -W 1 -c 1 10.1.0.11
+ip route del 10.1.0.0/24 via 192.168.122.2
+
+
+# Add persistent static route on virbr0
+# [libvirt_routes] > "static routes"
+# virsh help
+virsh net-dumpxml default > default.xml
+vim default.xml
+# <route family='ipv4' address='10.1.0.0' prefix='24' gateway='192.168.122.2'/>
+virsh net-destroy default
+virsh net-undefine default
+virsh net-define default.xml
+virsh net-autostart default
+virsh net-start default
+
+
+# Show static route on virbr0
+ip route show
+
+
+# Plug in router (dunsr1) port in virbr0
+ping -W 1 -c 1 10.1.0.11
+virsh domiflist dunsr1
+virsh detach-interface dunsr1 --type network --mac 52:54:00:a8:7a:02 --live
+virsh attach-interface dunsr1 --type network --source default --mac 52:54:00:a8:7a:02 --model virtio --live
+ping -W 1 -c 1 10.1.0.11
+
+
+# Persistence test of static route on virbr0
+reboot
+ip route show
+
+
+# Why we cannot use NetworkManager: services order
+systemctl list-dependencies --after network.target
+systemctl list-dependencies --after libvirtd.service
+grep Before /lib/systemd/system/NetworkManager.service
+grep After /lib/systemd/system/libvirtd.service

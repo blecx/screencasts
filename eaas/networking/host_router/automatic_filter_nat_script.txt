@@ -1,0 +1,66 @@
+SCREENCAST SCRIPT AUTOMATICALLY ADD FILTER AND NAT RULES
+
+
+AUTHOR
+
+Allard Berends
+
+
+HISTORY
+
+Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
+08-Mar-2016 21:49, Allard Berends, start
+
+
+REFERENCES
+
+[libvirt_hooks]     libvirt: Hooks for specific system
+                    management,
+                    https://www.libvirt.org/hooks.html
+
+[priv_ranges]       Private network - Wikipedia,
+                    https://en.wikipedia.org/wiki/Private_network
+
+
+SETUP ACTIONS
+
+
+COMMANDS
+
+# Demonstrate principle of libvirt network hook
+# [libvirt_hooks]
+# Simple network hook script
+mkdir --context=system_u:object_r:virt_etc_rw_t:s0 /etc/libvirt/hooks
+chmod 700 /etc/libvirt/hooks
+
+cat simple_network
+
+cp --context=system_u:object_r:virt_etc_rw_t:s0 simple_network /etc/libvirt/hooks/network
+chmod 700 /etc/libvirt/hooks/network
+
+journalctl -l --no-pager -b -f SYSLOG_IDENTIFIER=libvirtd.network
+
+virsh net-destroy default
+virsh net-start default
+
+
+# Network hook script to automate private ranges NAT
+cat nat_network
+
+cp --context=system_u:object_r:virt_etc_rw_t:s0 nat_network /etc/libvirt/hooks/network
+chmod 700 /etc/libvirt/hooks/network
+
+
+# Put script to the test
+journalctl -l --no-pager -b -f SYSLOG_IDENTIFIER=libvirtd.network
+
+alias itlf='iptables -n -v --line-numbers -L FORWARD'
+alias natp='iptables -t nat -n -v --line-numbers -L POSTROUTING'
+itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0
+
+virsh net-destroy default
+itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0
+
+virsh net-start default
+itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0
+

@@ -14,6 +14,10 @@ Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
 
 REFERENCES
 
+[eaas_host_router]  screencasts/eaas/networking/host_router
+                    at master,
+                    https://github.com/aberends/screencasts/tree/master/eaas/networking/host_router
+
 [libvirt_hooks]     libvirt: Hooks for specific system
                     management,
                     https://www.libvirt.org/hooks.html
@@ -64,3 +68,58 @@ itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 17
 virsh net-start default
 itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0
 
+
+YOUTUBE VIDEO DESCRIPTION
+
+Automatically configure iptables filter and nat tables with
+libvirt network hook script.
+
+Links:
+https://github.com/aberends/screencasts/tree/master/eaas/networking/host_router
+https://www.libvirt.org/hooks.html
+https://en.wikipedia.org/wiki/Private_network
+
+Create libvirt directory for hook scripts:
+mkdir --context=system_u:object_r:virt_etc_rw_t:s0 /etc/libvirt/hooks
+chmod 700 /etc/libvirt/hooks
+
+Simple network hook script:
+cat simple_network
+
+Copy to expected path:
+cp --context=system_u:object_r:virt_etc_rw_t:s0 simple_network /etc/libvirt/hooks/network
+chmod 700 /etc/libvirt/hooks/network
+
+Monitor the journal for libvirt events:
+journalctl -l --no-pager -b -f SYSLOG_IDENTIFIER=libvirtd.network
+
+Generate the events for the default network:
+virsh net-destroy default
+virsh net-start default
+
+Network hook script to automate private ranges NAT:
+cat nat_network
+
+Copy to expected path:
+cp --context=system_u:object_r:virt_etc_rw_t:s0 nat_network /etc/libvirt/hooks/network
+chmod 700 /etc/libvirt/hooks/network
+
+Put script to the test:
+journalctl -l --no-pager -b -f SYSLOG_IDENTIFIER=libvirtd.network
+
+Simplify commands with aliases:
+alias itlf='iptables -n -v --line-numbers -L FORWARD'
+alias natp='iptables -t nat -n -v --line-numbers -L POSTROUTING'
+
+Check iptables for private ranges:
+itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0
+
+Generate event:
+virsh net-destroy default
+
+Measure again:
+itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0
+
+Start the network up again and measure:
+virsh net-start default
+itlf | grep -e 10\.0 -e 172\.16 -e 192\.168\.0; echo; natp | grep -e 10\.0 -e 172\.16 -e 192\.168\.0

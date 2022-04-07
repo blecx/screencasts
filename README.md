@@ -12,7 +12,9 @@ Libvir provides [filter](https://libvirt.org/formatnwfilter.html#goals) to do so
 Even though this seem from 2015, in 2022 this is still a good and comprehensive explanation to explore how to solve problems.
 
 ## Firewall and network filtering in libvirt
-[libvirt firewall](https://libvirt.org/firewall.html) explain the tree components. If personal find this important to understand how things work.
+[libvirt firewall](https://libvirt.org/firewall.html) explain the tree components. If personal find this important to understand how things work. Especial the 3 types of standard configuration: isolated, nat, and routed and what they are for.
+
+For example nat: nat: outbound traffic to the LAN is allowed, but MASQUERADED.  Hooks can be used to extend the capabilities of nat and develop custom configuration.
 
 ## iptabels done by libvirt
 

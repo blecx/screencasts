@@ -16,6 +16,8 @@ Even though this seem from 2015, in 2022 this is still a good and comprehensive 
 
 For example nat: nat: outbound traffic to the LAN is allowed, but MASQUERADED.  Hooks can be used to extend the capabilities of nat and develop custom configuration.
 
+In this source the type=routed Allow inbound, but only to our expected subnet.So it is not like nat and limit inbound to connections. 
+
 ## iptabels done by libvirt
 
 The intention is to write a network hook for a nat used in the libvirt environment. This is used to for kbm/qemu guest that are behind a nat network and could not be reached from outside. network hooks can be used to overcome this.

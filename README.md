@@ -11,6 +11,9 @@ Libvir provides [filter](https://libvirt.org/formatnwfilter.html#goals) to do so
 [jamilinux](https://jamielinux.com/docs/libvirt-networking-handbook/nat-based-network.html#nat-limitations) show methods for all kind of network isolated, nat and routed. The default way is explained and ways are provided to get rid of the standard rules and make your own filtering. 
 Even though this seem from 2015, in 2022 this is still a good and comprehensive explanation to explore how to solve problems.
 
+## Firewall and network filtering in libvirt
+[libvirt firewall](https://libvirt.org/firewall.html) explain the tree components. If personal find this important to understand how things work.
+
 ## iptabels done by libvirt
 
 The intention is to write a network hook for a nat used in the libvirt environment. This is used to for kbm/qemu guest that are behind a nat network and could not be reached from outside. network hooks can be used to overcome this.
